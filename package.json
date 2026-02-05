@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@erc7824/nitrolite": "^0.5.3",
-    "viem": "^2.45.1",
-    "yellow-ts": "^0.0.10"
-  }
-}
