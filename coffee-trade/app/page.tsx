@@ -1,13 +1,42 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import CoffeeMarketplace from './components/CoffeeMarketPlace';
 import CostComparison from './components/CostComparison';
 import SellerForm from './components/SellerForm';
+import { useAccount, useSignMessage } from 'wagmi'
+import { createYellowClient } from './lib/yellowClient'
 
 export default function Home() {
- const [purchaseAmount, setPurchaseAmount] = useState(925);
+  //yellow
+  const { address, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+
+  const [yellowLog, setYellowLog] = useState<string[]>([]);
+  const yellowRef = useRef<ReturnType<typeof createYellowClient> | null>(null);
+
+  useEffect(() => {
+  if (!yellowRef.current) {
+    yellowRef.current = createYellowClient((msg) => {
+      setYellowLog((prev) => [`${new Date().toLocaleTimeString()} ${JSON.stringify(msg)}`, ...prev].slice(0, 8));
+    });
+  }
+  }, []);
+
+  const startSession = async () => {
+    if (!address || !yellowRef.current) return;
+
+    await yellowRef.current.createSession({
+      userAddress: address as `0x${string}`,
+      partnerAddress: '0x000000000000000000000000000000000000dEaD',
+      signMessageAsync,
+      userAmount: '1000000',
+      partnerAmount: '0',
+    });
+  };
+
+  const [purchaseAmount, setPurchaseAmount] = useState(925);
   const [showComparison, setShowComparison] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
 
@@ -21,6 +50,7 @@ export default function Home() {
       comparisonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-neutral-50 to-amber-50">
@@ -36,7 +66,10 @@ export default function Home() {
           </div>
         </div>
       </nav>
-
+      {/*display log*/}
+      <div className="mt-4 bg-white border border-stone-200 rounded-lg p-3 text-xs font-mono">
+        {yellowLog.length === 0 ? 'No Yellow messages yet' : yellowLog.map((l, i) => <div key={i}>{l}</div>)}
+      </div>
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
@@ -51,6 +84,42 @@ export default function Home() {
 
                 {/* Tabs */}
         <div className="flex justify-center gap-4 mb-12">
+          <button
+            disabled={!isConnected || !address}
+            onClick={async () => {
+              // partner can be a fixed “shop” address for demo
+              const partnerAddress = '0x000000000000000000000000000000000000dEaD' as const;
+
+              await yellowRef.current?.createSession({
+                userAddress: address as `0x${string}`,
+                partnerAddress,
+                signMessageAsync: signMessageAsync,
+                // $1.00 user, $0.00 partner (6 decimals)
+                userAmount: '1000000',
+                partnerAmount: '0',
+              });
+            }}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg"
+          >
+            Start Yellow Session ($1)
+          </button>
+
+          <button
+            disabled={!isConnected || !address}
+            onClick={async () => {
+              const partnerAddress = '0x000000000000000000000000000000000000dEaD' as const;
+              // $0.01 in 6 decimals
+              await yellowRef.current?.sendPayment({
+                userAddress: address as `0x${string}`,
+                recipient: partnerAddress,
+                signMessageAsync,
+                amount: '10000',
+            })}}
+            className="bg-amber-700 text-white px-4 py-2 rounded-lg ml-2"
+          >
+            Send $0.01 Off-chain
+          </button>
+
           <button
             onClick={() => setActiveTab('marketplace')}
             className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
