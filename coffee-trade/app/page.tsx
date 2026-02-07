@@ -142,20 +142,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Conditional Content */}
-        {activeTab === 'marketplace' ? (
-          <>
-            <CoffeeMarketplace onPurchaseSelect={handlePurchaseSelect} />
-            {showComparison && (
-              <div ref={comparisonRef} className="border-t border-stone-200 mt-16 pt-16">
-                <CostComparison purchaseAmount={purchaseAmount} />
-              </div>
-            )}
-          </>
-        ) : (
-          <SellerForm />
-        )}
-
         {/* Feature Cards */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-white rounded-xl p-6 shadow-lg border border-stone-200">

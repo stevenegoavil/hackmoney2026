@@ -77,7 +77,7 @@ export async function main() {
                 break;
 
                     default:
-      // ✅ minimal visibility into what you’re “waiting” on
+      
       console.log('Unhandled message:', JSON.stringify(message, null, 2));
       break;
 
