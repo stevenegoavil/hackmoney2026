@@ -253,7 +253,7 @@ useEffect(() => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <span className="text-2xl">☕</span>
-              <h1 className="text-xl font-bold text-amber-900">Coffee Trade</h1>
+              <h1 className="text-xl font-bold text-amber-900">CoffeeRun</h1>
             </div>
             <ConnectButton />
           </div>
