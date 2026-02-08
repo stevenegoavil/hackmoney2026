@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import CoffeeMarketplace from './components/CoffeeMarketPlace';
 import CostComparison from './components/CostComparison';
 import SellerForm from './components/SellerForm';
-import { useAccount, useSignMessage, useWalletClient } from 'wagmi'
+import { useAccount, useSignMessage, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { createYellowClient } from './lib/yellowClient'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import CoffeeMarketplace, { type CoffeeListing } from './components/CoffeeMarketplace_oh';
+
 
 
 
@@ -16,7 +17,11 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 export default function Home() {
   //yellow
   type WsStatus = 'connecting' | 'open' | 'closed' | 'error';
-
+  const safeStringify = (obj: any) =>
+  JSON.stringify(obj, (_key, value) => (typeof value === 'bigint' ? value.toString() : value));
+  const [listings, setListings] = useState<CoffeeListing[]>([]);
+  const [activeTab, setActiveTab] = useState<'marketplace' | 'sell'>('marketplace');
+  const { writeContractAsync } = useWriteContract();
   const [yellowWsStatus, setYellowWsStatus] = useState<WsStatus>('connecting');
   const [yellowJwt, setYellowJwt] = useState<string | null>(null);
   const [yellowUsdc, setYellowUsdc] = useState<string>('0'); // best-effort
@@ -38,7 +43,7 @@ useEffect(() => {
     yellowRef.current = createYellowClient((msg) => {
       // log
       setYellowLog((prev) =>
-        [`${new Date().toLocaleTimeString()} ${JSON.stringify(msg)}`, ...prev].slice(0, 8)
+        [`${new Date().toLocaleTimeString()} ${safeStringify(msg)}`, ...prev].slice(0, 8)
       );
 
       // WS status
@@ -142,7 +147,7 @@ useEffect(() => {
   const [showComparison, setShowComparison] = useState(false);
   const comparisonRef = useRef<HTMLDivElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'marketplace' | 'sell'>('marketplace');
+  
 
   const handlePurchaseSelect = (amount: number) => {
     setPurchaseAmount(amount);
@@ -166,7 +171,79 @@ useEffect(() => {
       ? 'Error'
       : 'Disconnected';
 
-  const authLabel = yellowCertified || !!yellowJwt ? 'Certified' : 'Not certified';
+      const authLabel = yellowCertified || !!yellowJwt ? 'Certified' : 'Not certified'
+
+  const erc20Abi = [
+    {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+    { name: 'to', type: 'address' },
+    { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    },
+  ] as const;
+
+    // -----------------------------
+  // BUY LOGIC (two paths)
+  // -----------------------------
+  const USDC_ADDRESS =
+    process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}` | undefined;
+
+  const CHARGE_USDC_BASE = BigInt(10000); // $0.01 in 6 decimals
+
+  const canUseYellow =
+    yellowWsStatus === 'open' && (yellowCertified || !!yellowJwt) && !!yellowRef.current;
+
+  const [buyStatus, setBuyStatus] = useState<string | null>(null);
+
+  
+ 
+
+
+
+
+
+
+
+  // NOTE: CoffeeMarketplace must call onBuy(product)
+  // product must include: { name, recipient }
+  const buyProduct = async (p: { recipient: `0x${string}`; name: string }) => {
+    if (!address) throw new Error('Connect wallet first');
+
+    setBuyStatus(`Buying ${p.name} for $0.01...`);
+
+    // A) Yellow off-chain
+    if (canUseYellow) {
+      await yellowRef.current!.sendPayment({
+        userAddress: address as `0x${string}`,
+        recipient: p.recipient,
+        signMessageAsync,
+        amount: CHARGE_USDC_BASE.toString(), // "10000"
+      } as any);
+
+      setBuyStatus(`✅ Paid off-chain via Yellow ($0.01)`);
+      return;
+    }
+
+    // B) MetaMask on-chain (USDC transfer)
+    if (!USDC_ADDRESS) {
+      throw new Error('Missing NEXT_PUBLIC_USDC_ADDRESS (needed for on-chain USDC payments)');
+    }
+
+    await writeContractAsync({
+      address: USDC_ADDRESS,
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [p.recipient, CHARGE_USDC_BASE],
+    });
+
+    setBuyStatus(`✅ Paid on-chain via MetaMask ($0.01 USDC)`);
+  };
+
+  const createListing = yellowCertified || !!yellowJwt ? 'Certified' : 'Not certified';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-neutral-50 to-amber-50">
@@ -307,12 +384,46 @@ useEffect(() => {
           </div>
         </div>
 
-        <CoffeeMarketplace onPurchaseSelect={handlePurchaseSelect} />
+        {/*<CoffeeMarketplace onPurchaseSelect={handlePurchaseSelect} />
         <div className="text-center">
+        <button className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg ">
+            Start Trading Coffee
+        </button>
+        </div>
+        {buyStatus && (
+        <div className="mt-4 bg-white border border-stone-200 rounded-lg p-3 text-sm">
+            {buyStatus}
+          </div>
+        )}
+
+        <div className="text-center mt-10">
           <button className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-colors shadow-lg">
             Start Trading Coffee
           </button>
-        </div>
+        </div>*/}
+
+         {/* MAIN CONTENT: marketplace OR seller */}
+        {activeTab === 'marketplace' ? (
+          <CoffeeMarketplace
+            listings={listings}
+            onPurchaseSelect={handlePurchaseSelect}
+            onBuy={buyProduct}
+          />
+        ) : (
+          <SellerForm
+            onCreateListing={(newListing) => {
+              setListings((prev) => [newListing, ...prev]);
+              setActiveTab('marketplace');
+            }}
+          />
+        )}
+
+        {buyStatus && (
+          <div className="mt-4 bg-white border border-stone-200 rounded-lg p-3 text-sm">
+            {buyStatus}
+          </div>
+        )}
+
         {/* Cost Comparison */}
         {showComparison && (
           <div ref={comparisonRef} className="border-t border-stone-200 mt-16 pt-16">
@@ -322,4 +433,4 @@ useEffect(() => {
       </main>
     </div>
   );
-}
+  }

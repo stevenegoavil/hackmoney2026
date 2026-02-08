@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
+import type { CoffeeListing } from './CoffeeMarketplace_oh'; // adjust path if needed
 
-export default function SellerForm() {
+export default function SellerForm({
+  onCreateListing,
+}: {
+  onCreateListing: (listing: CoffeeListing) => void;
+}) {
   const { address, isConnected } = useAccount();
+
   const [formData, setFormData] = useState({
     farmName: '',
     location: '',
@@ -12,16 +18,32 @@ export default function SellerForm() {
     pricePerPound: '',
     variety: '',
     roasted: false,
-    harvestDate: ''
+    harvestDate: '',
   });
 
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('New listing:', { ...formData, seller: address });
+    if (!address) return;
+
+    const newListing: CoffeeListing = {
+      id: Date.now(),
+      sellerAddress: address as `0x${string}`, // defaults to YOUR wallet
+      farmName: formData.farmName,
+      location: formData.location,
+      pounds: Number(formData.pounds),
+      pricePerPound: Number(formData.pricePerPound),
+      roasted: formData.roasted,
+      variety: formData.variety,
+      harvestDate: formData.harvestDate,
+    };
+
+    onCreateListing(newListing);
+
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    setTimeout(() => setSubmitted(false), 2000);
+
     // Reset form
     setFormData({
       farmName: '',
@@ -30,15 +52,15 @@ export default function SellerForm() {
       pricePerPound: '',
       variety: '',
       roasted: false,
-      harvestDate: ''
+      harvestDate: '',
     });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
@@ -66,7 +88,6 @@ export default function SellerForm() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-stone-200 p-8">
         <div className="space-y-6">
-          {/* Farm Name */}
           <div>
             <label className="block text-stone-700 font-medium mb-2">Farm Name *</label>
             <input
@@ -75,12 +96,11 @@ export default function SellerForm() {
               value={formData.farmName}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., Sunny Hills Coffee Farm"
             />
           </div>
 
-          {/* Location */}
           <div>
             <label className="block text-stone-700 font-medium mb-2">Location *</label>
             <input
@@ -89,12 +109,11 @@ export default function SellerForm() {
               value={formData.location}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., Santa Barbara, CA"
             />
           </div>
 
-          {/* Variety */}
           <div>
             <label className="block text-stone-700 font-medium mb-2">Coffee Variety *</label>
             <input
@@ -103,12 +122,11 @@ export default function SellerForm() {
               value={formData.variety}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., Caturra, Typica, Bourbon"
             />
           </div>
 
-          {/* Harvest Date */}
           <div>
             <label className="block text-stone-700 font-medium mb-2">Harvest Date *</label>
             <input
@@ -117,12 +135,11 @@ export default function SellerForm() {
               value={formData.harvestDate}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., January 2026"
             />
           </div>
 
-          {/* Pounds */}
           <div>
             <label className="block text-stone-700 font-medium mb-2">Available Pounds *</label>
             <input
@@ -132,14 +149,13 @@ export default function SellerForm() {
               onChange={handleChange}
               required
               min="1"
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., 50"
             />
           </div>
 
-          {/* Price Per Pound */}
           <div>
-            <label className="block text-stone-700 font-medium mb-2">Price Per Pound (USD) *</label>
+            <label className="block text-stone-700 font-medium mb-2">Price Per Pound (UI only) *</label>
             <input
               type="number"
               name="pricePerPound"
@@ -148,30 +164,27 @@ export default function SellerForm() {
               required
               min="0.01"
               step="0.01"
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-black"
               placeholder="e.g., 18.50"
             />
           </div>
 
-          {/* Roasted Checkbox */}
           <div className="flex items-center">
             <input
               type="checkbox"
               name="roasted"
               checked={formData.roasted}
               onChange={handleChange}
-              className="w-5 h-5 text-amber-700 border-stone-300 rounded focus:ring-amber-500"
+              className="w-5 h-5"
             />
-            <label className="ml-3 text-stone-700 font-medium">Roasted (check if beans are roasted)</label>
+            <label className="ml-3 text-stone-700 font-medium">Roasted</label>
           </div>
 
-          {/* Connected Wallet Display */}
           <div className="bg-stone-50 rounded-lg p-4">
             <p className="text-stone-600 text-sm mb-1">Your Wallet Address:</p>
             <p className="text-stone-800 font-mono text-sm">{address}</p>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold py-4 rounded-lg transition-colors text-lg"
