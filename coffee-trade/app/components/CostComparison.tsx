@@ -12,27 +12,27 @@ export default function CostComparison({ purchaseAmount }: { purchaseAmount: num
   const costBreakdowns: CostBreakdown[] = [
     {
       method: 'Credit Card',
-      transactionFee: purchaseAmount * 0.029 + 0.30, // 2.9% + $0.30
-      settlementTime: '2-3 business days',
-      total: purchaseAmount + (purchaseAmount * 0.029 + 0.30),
+      transactionFee: 0, // 2.9% + $0.30
+      settlementTime: '"Data not available at this momment"',
+      total: 0,
       color: 'from-red-500 to-red-600'
     },
     {
       method: 'Wire Transfer',
-      transactionFee: 25.00, // Flat fee
-      settlementTime: '1-2 business days',
-      total: purchaseAmount + 25.00,
+      transactionFee: 0, // Flat fee
+      settlementTime: '"Data not available at this momment"',
+      total: 0,
       color: 'from-orange-500 to-orange-600'
     },
     {
       method: 'Standard Blockchain',
-      transactionFee: 15.00, // Estimated gas fees
+      transactionFee: 1.5, // Estimated gas fees
       settlementTime: '10-15 minutes',
-      total: purchaseAmount + 15.00,
+      total: purchaseAmount + 1.5,
       color: 'from-blue-500 to-blue-600'
     },
     {
-      method: 'Yellow Network (Session)',
+      method: 'Yellow Network (Per Session)',
       transactionFee: 0.50, // Minimal session fee
       settlementTime: 'Instant',
       total: purchaseAmount + 0.50,

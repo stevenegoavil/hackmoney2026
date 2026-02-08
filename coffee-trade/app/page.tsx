@@ -301,9 +301,9 @@ useEffect(() => {
 
 
       {/*display log*/}
-      <div className="mt-4 bg-white border border-stone-200 rounded-lg p-3 text-xs font-mono">
+      {/*<div className="mt-4 bg-white border border-stone-200 rounded-lg p-3 text-xs font-mono">
         {yellowLog.length === 0 ? 'No Yellow messages yet' : yellowLog.map((l, i) => <div key={i}>{l}</div>)}
-      </div>
+      </div> */}
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
