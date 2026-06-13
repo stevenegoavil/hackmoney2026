@@ -215,7 +215,7 @@ ws.onmessage = (event) => {
         pendingAuthReject = null;
       }
       ws.removeEventListener('message', onChallenge as any);
-    }, 15000);
+    }, 60000);
   });
 },
 
